@@ -1,0 +1,84 @@
+- P1
+
+Full structure(ls -R):
+.:
+config
+logs
+reports
+scripts
+
+./config:
+
+./logs:
+sat-001.log
+sat-002.log
+
+./reports:
+lab01_check.txt
+lab01_report.txt
+
+./scripts:
+
+
+Logs dir(ls logs/):
+sat-001.log
+sat-002.log
+
+- P2:
+
+(cp logs/sat-001.log logs/sat-001-backup.log)
+(cp logs/sat-002.log logs/sat-002-backup.log)
+
+Logs dir after backups:
+sat-001-backup.log
+sat-001.log
+sat-002-backup.log
+sat-002.log
+
+- P3:
+
+sat-001(grep "ERROR" logs/sat-001.log >> reports/lab01_check.txt
+	grep "WARN" logs/sat-001.log >> reports/lab01_check.txt):
+
+2026-03-01 12:00:10 ERROR "Communication timeout"
+
+2026-03-01 12:00:05 WARN "Temperature above threshold"
+
+sat-002(grep "ERROR" logs/sat-002.log >> reports/lab01_check.txt
+	grep "WARN" logs/sat-002.log >> reports/lab01_check.txt):
+
+2026-03-01 12:00:10 ERROR "Communication timeout"
+
+2026-03-01 12:00:05 WARN "Temperature above threshold"
+
+- P4:
+
+The total number of log entries in sat-001.log(wc -l < logs/sat-001.log):
+3
+
+The number of ERROR events in sat-002.log(rep "ERROR" logs/sat-002.log | wc -l >> reports/lab01_check.txt):
+1
+
+- P5:
+
+(chmod 644 logs/sat-002.log)
+
+Permissions(ll logs/):
+total 24
+drwxrwxr-x 2 student student 4096 mar 17 12:42 ./
+drwxrwxr-x 6 student student 4096 mar 17 12:11 ../
+-rw-r--r-- 1 student student  159 mar 17 12:42 sat-001-backup.log
+-rw-r--r-- 1 student student  159 mar 17 12:13 sat-001.log
+-rw-r--r-- 1 student student  159 mar 17 12:42 sat-002-backup.log
+-rw-r--r-- 1 student student  159 mar 17 12:13 sat-002.log
+
+- P6:
+
+echo '2026-03-01 13:05:00 INFO "Subsystem check completed"' >> logs/sat-001.log
+
+Content of sat-001 log file(tail -n 5 logs/sat-001.log):
+
+2026-03-01 12:00:01 INFO "Telemetry link established"
+2026-03-01 12:00:05 WARN "Temperature above threshold"
+2026-03-01 12:00:10 ERROR "Communication timeout"
+2026-03-01 13:05:00 INFO "Subsystem check completed"
