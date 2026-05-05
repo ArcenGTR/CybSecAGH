@@ -1,0 +1,257 @@
+Task 1
+
+Example of logs:
+
+[RECEIVED 2026-05-05T09:03:17+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:17+02:00;VALUE=2
+[RECEIVED 2026-05-05T09:03:19+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:19+02:00;VALUE=81
+[RECEIVED 2026-05-05T09:03:21+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:21+02:00;VALUE=94
+[RECEIVED 2026-05-05T09:03:23+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:23+02:00;VALUE=52
+[RECEIVED 2026-05-05T09:03:25+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:25+02:00;VALUE=81
+[RECEIVED 2026-05-05T09:03:27+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:27+02:00;VALUE=29
+[RECEIVED 2026-05-05T09:03:29+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:29+02:00;VALUE=57
+[RECEIVED 2026-05-05T09:03:31+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:31+02:00;VALUE=22
+[RECEIVED 2026-05-05T09:03:33+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:33+02:00;VALUE=98
+[RECEIVED 2026-05-05T09:03:35+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:03:35+02:00;VALUE=43
+
+Task 2
+
+
+
+Task 3
+
+[RECEIVED 2026-05-05T09:20:11+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:11+02:00;VALUE=53
+[RECEIVED 2026-05-05T09:20:13+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:13+02:00;VALUE=72
+[RECEIVED 2026-05-05T09:20:15+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:15+02:00;VALUE=76
+[RECEIVED 2026-05-05T09:20:16+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:16+02:00;VALUE=9999 <---
+[RECEIVED 2026-05-05T09:20:17+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:17+02:00;VALUE=15
+[RECEIVED 2026-05-05T09:20:19+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:19+02:00;VALUE=40
+[RECEIVED 2026-05-05T09:20:21+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:21+02:00;VALUE=71
+[RECEIVED 2026-05-05T09:20:32+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:32+02:00;VALUE=12
+[RECEIVED 2026-05-05T09:20:34+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:34+02:00;VALUE=4
+[RECEIVED 2026-05-05T09:20:36+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:36+02:00;VALUE=20
+[RECEIVED 2026-05-05T09:20:38+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:38+02:00;VALUE=37
+[RECEIVED 2026-05-05T09:20:40+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:40+02:00;VALUE=21
+[RECEIVED 2026-05-05T09:20:42+02:00] SAT_ID=sat-002;TIMESTAMP=2026-05-05T09:20:42+02:00;VALUE=-100 <---
+[RECEIVED 2026-05-05T09:20:42+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:42+02:00;VALUE=45
+[RECEIVED 2026-05-05T09:20:44+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:44+02:00;VALUE=33
+[RECEIVED 2026-05-05T09:20:46+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:20:46+02:00;VALUE=96
+
+Injection into unprotected telemetry was successfull 
+
+Task 4
+
+Secure sender:
+
+```
+#!/bin/bash
+
+HOST="127.0.0.1"
+PORT=5001
+SAT_ID="sat-001"
+
+SECRET_KEY="orion-shared-secret"
+
+echo "=== SECURE TELEMETRY SENDER (HMAC-SHA256) ==="
+echo "Sending to $HOST:$PORT"
+echo "Using shared secret key for HMAC signatures"
+echo ""
+
+while true; do
+    TS=$(date -Iseconds)
+    VALUE=$((RANDOM % 100))
+    
+    MESSAGE="SAT_ID=$SAT_ID;TIMESTAMP=$TS;VALUE=$VALUE"
+
+    SIGNATURE=$(printf "%s" "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET_KEY" | cut -d' ' -f2)
+    
+    SIGNED_MESSAGE="$MESSAGE;SIGNATURE=$SIGNATURE"
+    
+    echo "[SENT] $SIGNED_MESSAGE"
+
+    echo "$SIGNED_MESSAGE" | nc -N "$HOST" "$PORT"
+    
+    sleep 2
+done
+```
+
+Secure receiver:
+
+```
+#!/bin/bash
+
+PORT=5001
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPORT_DIR="$SCRIPT_DIR/reports"
+LOG_FILE="$REPORT_DIR/telemetry_secure.log"
+
+SECRET_KEY="orion-shared-secret"
+
+mkdir -p "$REPORT_DIR"
+touch "$LOG_FILE"
+
+echo "=== SECURE TELEMETRY RECEIVER (HMAC-SHA256) ==="
+echo "Listening on port $PORT"
+echo "Logging to $LOG_FILE"
+echo "Verifying messages with HMAC-SHA256"
+echo ""
+
+while true; do
+    nc -l 127.0.0.1 "$PORT" | while IFS= read -r line; do
+        TS=$(date -Iseconds)
+
+        DATA=$(echo "$line" | sed 's/;SIGNATURE=.*//')
+
+        RECEIVED_SIGNATURE=$(echo "$line" | sed 's/.*;SIGNATURE=//')
+        
+        EXPECTED_SIGNATURE=$(printf "%s" "$DATA" | openssl dgst -sha256 -hmac "$SECRET_KEY" | cut -d' ' -f2)
+        
+        if [ "$RECEIVED_SIGNATURE" = "$EXPECTED_SIGNATURE" ]; then
+            echo "[ACCEPTED $TS] $DATA"
+            echo "[ACCEPTED $TS] $DATA" >> "$LOG_FILE"
+        else
+            echo "[REJECTED $TS] INVALID SIGNATURE: $line"
+            echo "[REJECTED $TS] INVALID SIGNATURE: $line" >> "$LOG_FILE"
+        fi
+    done
+done
+```
+
+Logs:
+
+[ACCEPTED 2026-05-05T09:26:58+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:26:58+02:00;VALUE=3
+[ACCEPTED 2026-05-05T09:27:00+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:00+02:00;VALUE=38
+[ACCEPTED 2026-05-05T09:27:02+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:02+02:00;VALUE=49
+[ACCEPTED 2026-05-05T09:27:04+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:04+02:00;VALUE=66
+[ACCEPTED 2026-05-05T09:27:06+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:06+02:00;VALUE=80
+[ACCEPTED 2026-05-05T09:27:08+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:08+02:00;VALUE=90
+[REJECTED 2026-05-05T09:27:09+02:00] INVALID SIGNATURE: SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:09+02:00;VALUE=9999;SIGNATURE=fake
+[ACCEPTED 2026-05-05T09:27:10+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:10+02:00;VALUE=93
+[ACCEPTED 2026-05-05T09:27:12+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:12+02:00;VALUE=19
+[ACCEPTED 2026-05-05T09:27:14+02:00] SAT_ID=sat-001;TIMESTAMP=2026-05-05T09:27:14+02:00;VALUE=83
+
+Protection with hmac key works for this type of attack
+
+task 5
+
+Secure sender:
+
+```
+#!/bin/bash
+
+HOST="127.0.0.1"
+PORT=5001
+SAT_ID="sat-001"
+
+SECRET_KEY="orion-shared-secret"
+
+echo "=== SECURE TELEMETRY SENDER (HMAC-SHA256) ==="
+echo "Sending to $HOST:$PORT"
+echo "Using shared secret key for HMAC signatures"
+echo ""
+
+while true; do
+    TS=$(date -Iseconds)
+    VALUE=$((RANDOM % 100))
+    
+    MESSAGE="SAT_ID=$SAT_ID;TIMESTAMP=$TS;VALUE=$VALUE"
+
+    SIGNATURE=$(printf "%s" "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET_KEY" | cut -d' ' -f2)
+    
+    SIGNED_MESSAGE="$MESSAGE;SIGNATURE=$SIGNATURE"
+    
+    echo "[SENT] $SIGNED_MESSAGE"
+
+    echo "$SIGNED_MESSAGE" | nc -N "$HOST" "$PORT"
+    
+    sleep 2
+done
+```
+
+Secure receiver:
+
+```
+#!/bin/bash
+
+PORT=5001
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPORT_DIR="$SCRIPT_DIR/reports"
+LOG_FILE="$REPORT_DIR/telemetry_secure.log"
+STATE_FILE="$REPORT_DIR/last_timestamp.db"
+
+SECRET_KEY="orion-shared-secret"
+
+mkdir -p "$REPORT_DIR"
+touch "$LOG_FILE"
+touch "$STATE_FILE"
+
+echo "=== SECURE TELEMETRY RECEIVER (HMAC-SHA256 + REPLAY PROTECTION) ==="
+echo "Listening on port $PORT"
+echo "Logging to $LOG_FILE"
+echo "Verifying messages with HMAC-SHA256"
+echo "Detecting replay attacks using timestamp validation"
+echo ""
+
+while true; do
+    nc -l 127.0.0.1 "$PORT" | while IFS= read -r line; do
+        TS=$(date -Iseconds)
+
+        DATA=$(echo "$line" | sed 's/;SIGNATURE=.*//')
+
+        RECEIVED_SIGNATURE=$(echo "$line" | sed 's/.*;SIGNATURE=//')
+        
+        EXPECTED_SIGNATURE=$(printf "%s" "$DATA" | openssl dgst -sha256 -hmac "$SECRET_KEY" | cut -d' ' -f2)
+        
+        if [ "$RECEIVED_SIGNATURE" != "$EXPECTED_SIGNATURE" ]; then
+            echo "[REJECTED $TS] INVALID SIGNATURE: $line"
+            echo "[REJECTED $TS] INVALID SIGNATURE: $line" >> "$LOG_FILE"
+            continue
+        fi
+        
+        # Extract timestamp and satellite ID for replay detection
+        MESSAGE_TIMESTAMP=$(echo "$DATA" | grep -o 'TIMESTAMP=[^;]*' | cut -d= -f2)
+        SAT_ID=$(echo "$DATA" | grep -o 'SAT_ID=[^;]*' | cut -d= -f2)
+        
+        # Check for replay attacks
+        LAST_TS=$(grep "^$SAT_ID=" "$STATE_FILE" 2>/dev/null | cut -d= -f2)
+        
+        if [[ -n "$LAST_TS" ]] && [[ ! "$MESSAGE_TIMESTAMP" > "$LAST_TS" ]]; then
+            echo "[REJECTED $TS] REPLAY DETECTED from $SAT_ID: $DATA"
+            echo "[REJECTED $TS] REPLAY DETECTED from $SAT_ID: $DATA" >> "$LOG_FILE"
+            continue
+        fi
+        
+        # Message passed all checks - accept it
+        echo "[ACCEPTED $TS] $DATA"
+        echo "[ACCEPTED $TS] $DATA" >> "$LOG_FILE"
+        
+        # Update last known timestamp for this satellite
+        TMP_FILE=$(mktemp)
+        grep -v "^$SAT_ID=" "$STATE_FILE" > "$TMP_FILE" 2>/dev/null && mv "$TMP_FILE" "$STATE_FILE"
+        echo "$SAT_ID=$MESSAGE_TIMESTAMP" >> "$STATE_FILE"
+    done
+done
+```
+
+=== SECURE TELEMETRY RECEIVER (HMAC-SHA256 + REPLAY PROTECTION) ===
+Listening on port 5001
+Logging to /mnt/d/Code/Repositories/CybSecAGH/misc/reports/telemetry_secure.log
+Verifying messages with HMAC-SHA256
+Detecting replay attacks using timestamp validation
+
+[ACCEPTED 2026-05-05T10:29:41+02:00] SAT_ID=sat-001;TIMESTAMP=2026-04-27T21:00:00+02:00;VALUE=42
+[REJECTED 2026-05-05T10:30:01+02:00] REPLAY DETECTED from sat-001: SAT_ID=sat-001;TIMESTAMP=2026-04-27T21:00:00+02:00;VALUE=42
+
+Replay attacks are also secured
+
+Possible attacks:
+ - DoS Attacks
+ - Key Compromise
+ - Network Analysis
+
+
+
+
+
+
