@@ -1,0 +1,82 @@
+Task 1:
+
+=== INSECURE COMMAND RECEIVER STARTED ===
+Listening on 127.0.0.1:6000
+Logging to ../reports/command_channel.log
+
+[RECEIVED 2026-05-05T11:58:59+02:00] USER=alice ROLE=operator CMD=SET_MODE_SAFE
+[ACTION] Switching satellite mode to SAFE
+
+[RECEIVED 2026-05-05T11:59:12+02:00] USER=bob ROLE=operator CMD=SET_MODE_NOMINAL
+[ACTION] Switching satellite mode to NOMINAL
+
+[RECEIVED 2026-05-05T12:00:57+02:00] USER=admin ROLE=admin CMD=RESET
+[ACTION] Simulated satellite reset
+
+[RECEIVED 2026-05-05T12:01:04+02:00] USER=admin ROLE=admin CMD=SHUTDOWN
+[ACTION] Simulated satellite shutdown
+
+[RECEIVED 2026-05-05T12:01:58+02:00] USER=eve ROLE=operator CMD=DEPLOY_SOLAR_ARRAY
+[UNKNOWN COMMAND] DEPLOY_SOLAR_ARRAY
+
+[RECEIVED 2026-05-05T12:03:56+02:00] USER=intruder ROLE=admin CMD=SHUTDOWN
+[ACTION] Simulated satellite shutdown
+
+Intruder's command is executed because we don't have any protection on our receiver
+
+Task 2:
+
+=== AUTHORIZED COMMAND RECEIVER STARTED ===
+Listening on 127.0.0.1:6001
+Logging to ../reports/command_authorization.log
+
+[RECEIVED 2026-05-05T12:08:22+02:00] USER=alice ROLE=operator CMD=SET_MODE_SAFE
+[AUTHORIZED 2026-05-05T12:08:22+02:00] USER=alice ROLE=operator CMD=SET_MODE_SAFE
+[ACTION] Switching satellite mode to SAFE
+
+[RECEIVED 2026-05-05T12:08:51+02:00] USER=alice ROLE=operator CMD=SET_MODE_NOMINAL
+[AUTHORIZED 2026-05-05T12:08:51+02:00] USER=alice ROLE=operator CMD=SET_MODE_NOMINAL
+[ACTION] Switching satellite mode to NOMINAL
+
+[RECEIVED 2026-05-05T12:09:08+02:00] USER=alice ROLE=operator CMD=RESET
+[REJECTED 2026-05-05T12:09:08+02:00] UNAUTHORIZED USER=alice ROLE=operator CMD=RESET
+
+[RECEIVED 2026-05-05T12:09:24+02:00] USER=bob ROLE=admin CMD=RESET
+[AUTHORIZED 2026-05-05T12:09:24+02:00] USER=bob ROLE=admin CMD=RESET
+[ACTION] Simulated satellite reset
+
+[RECEIVED 2026-05-05T12:09:41+02:00] USER=intruder ROLE=admin CMD=SHUTDOWN
+[AUTHORIZED 2026-05-05T12:09:41+02:00] USER=intruder ROLE=admin CMD=SHUTDOWN
+[ACTION] Simulated satellite shutdown
+
+
+Role-based access works, but we still don't have protection from unatorized access from outside
+
+Task 3:
+
+=== AUTHORIZED COMMAND RECEIVER STARTED ===
+Listening on 127.0.0.1:6002
+Logging to ../reports/command_authorization.log
+
+[RECEIVED 2026-05-05T12:54:14+02:00] USER=bob ROLE=admin CMD=SHUTDOWN
+[AUTHORIZED 2026-05-05T12:54:14+02:00] USER= ROLE=admin CMD=SHUTDOWN
+[ACTION] Simulated satellite shutdown
+
+[RECEIVED 2026-05-05T12:54:26+02:00] USER=alice ROLE=operator CMD=SET_MODE_SAFE
+[AUTHORIZED 2026-05-05T12:54:26+02:00] USER= ROLE=operator CMD=SET_MODE_SAFE
+[ACTION] Switching satellite mode to SAFE
+
+[RECEIVED 2026-05-05T12:54:49+02:00] USER=eve ROLE=admin CMD=SHUTDOWN
+[REJECTED] UNKNOWN USER: eve
+[RECEIVED 2026-05-05T12:55:06+02:00] USER=alice ROLE=admin CMD=SHUTDOWN
+[REJECTED] AUTHENTICATION FAILED: alice
+
+By storing users with their tokens into some db we achieving better security
+
+Task 4:
+
+
+
+
+
+
