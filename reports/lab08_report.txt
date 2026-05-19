@@ -1,0 +1,16 @@
+Task 1 & 2:
+
+student@student-CZR-BUSINESS-1150:~/repos/CybSecAGH$ docker compose up -d
+[+] Running 3/3
+ ✔ Network cybsecagh_default  Created                                                                                    0.1s 
+ ✔ Container grafana          Started                                                                                    0.3s 
+ ✔ Container prometheus       Started                                                                                    0.4s 
+student@student-CZR-BUSINESS-1150:~/repos/CybSecAGH$ docker ps -a
+CONTAINER ID   IMAGE                    COMMAND                  CREATED         STATUS         PORTS                                         NAMES
+503e77fa5088   grafana/grafana:latest   "/run.sh"                2 seconds ago   Up 2 seconds   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp   grafana
+b0e68f19e49f   prom/prometheus:latest   "/bin/prometheus --c…"   2 seconds ago   Up 2 seconds   0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp   prometheus
+
+Task 3:
+
+
+
